@@ -1,0 +1,1 @@
+* In order to deploy all resources, run kubectl apply -k ./

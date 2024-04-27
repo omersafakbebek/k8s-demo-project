@@ -1,0 +1,42 @@
+---
+- name: Remove ingress-nginx controller #In order to delete the load balancer
+  hosts: localhost
+  tasks:
+    - name: Remove the release
+      kubernetes.core.helm:
+        release_state: absent
+        release_name: nginx-release
+        release_namespace: ingress
+        wait: true
+
+- name: Delete the vms
+  hosts: localhost
+  gather_facts: yes
+  vars:
+      project: k8s-demo-421606
+      zone: europe-west6-a
+      network_name: example-k8s
+      subnet_name: k8s-nodes
+      service_account_file: "gcp-key.json"
+      region: europe-west6
+      subnet_range: 10.240.0.0/24
+      worker_node_count: 2 
+  tasks: 
+    - name: Delete the controller node
+      google.cloud.gcp_compute_instance:
+        name: "controller"
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Delete the worker nodes
+      google.cloud.gcp_compute_instance:
+        name: "worker-{{ item }}"
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+      loop: "{{ range(0, worker_node_count | int)|list }}"
